@@ -10,6 +10,7 @@ from keras.models import load_model
 from scipy import ndimage
 import scipy.io as io
 import numpy as np
+import os
 
 import utils
 
@@ -132,28 +133,27 @@ def predict(img_path):
 
 	return scanpaths_array
 
-def predict_and_save(imgs_path, ids, out_path):
+def predict_and_save(imgs_path, out_path):
 	""" 
 		Predicts multiple images and saves them in .mat format
 		on an output path
 
 		Param:
 			img_path : path where the images are
-			ids: list with image ids
 			out_path: path where the .mat files will be saved
 
 		i.e.:
 			img_path = '/root/sharedfolder/360Salient/'
-			ids =  [29, 31]
 			out_path =  '/root/sharedfolder/360Salient/results/'
 	"""
 
 	# Preproces and load images
 
-	paths = utils.paths_for_images(imgs_path, ids)
+	paths = [os.path.join(imgs_path, f) for f in os.listdir(imgs_path)]
 
 	for i, path in enumerate(paths):
-		print('Working on image %d of %d' % (i+1, len(paths)))
+		name = path.replace(imgs_path,'')
+		print('Working on image %s, %d of %d' % (name, i+1, len(paths)))
 
 		# Predict the scanpaths
 		scanpaths = predict(path)
@@ -162,10 +162,9 @@ def predict_and_save(imgs_path, ids, out_path):
 		scanpaths = np.array(scanpaths, dtype=np.float32)
 
 		# Save in output folder
-		name = 'pred_%d' % ids[i]
-		io.savemat(out_path + '%s.mat' % name, {name: scanpaths})
+		np.savetxt(out_path + '%s.csv' % name, scanpaths, fmt=('%i','%i','%.06f','%i','%i'), header="user, index, time, x, y", delimiter=',')
 
-		print('Saved scanpaths from image %s in file %s.mat' % (path, name))
+		print('Saved scanpaths from image %s in file %s.csv' % (path, name))
 
 	print('Done!')
 	return True
